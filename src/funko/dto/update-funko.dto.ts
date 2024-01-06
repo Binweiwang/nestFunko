@@ -1,6 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types'
-import { Categoria, CreateFunkoDto } from './create-funko.dto'
-import { IsOptional } from 'class-validator'
+import { CreateFunkoDto } from './create-funko.dto'
+import { IsBoolean, IsOptional } from 'class-validator'
+import { Categoria } from '../../categorias/entities/categoria.entity'
 
 export class UpdateFunkoDto extends PartialType(CreateFunkoDto) {
   @IsOptional()
@@ -10,7 +11,8 @@ export class UpdateFunkoDto extends PartialType(CreateFunkoDto) {
   @IsOptional()
   imagen?: string
   @IsOptional()
-  categoria?: Categoria
+  categoria?: string
   @IsOptional()
+  @IsBoolean({ message: 'isActive debe ser un boolean' })
   isActive?: boolean
 }

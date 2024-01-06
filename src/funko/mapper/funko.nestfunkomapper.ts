@@ -3,21 +3,22 @@ import { Funko } from '../entities/funko.entity'
 import { ResponseFunkoDto } from '../dto/response-funko.dto'
 import { CreateFunkoDto } from '../dto/create-funko.dto'
 import { plainToClass } from 'class-transformer'
+import { Categoria } from '../../categorias/entities/categoria.entity'
 
 @Injectable()
-export class NestFunkoMapper {
-  toFunko(createFunkoDto: CreateFunkoDto): Funko {
-    return plainToClass(Funko, createFunkoDto)
+export class FunkoMapper {
+  toFunko(createFunkoDto: CreateFunkoDto, categoria: Categoria): Funko {
+    const funko = plainToClass(Funko, createFunkoDto)
+    funko.categoria = categoria
+    return funko
   }
   funkoToResponseFunkoDto(funko: Funko): ResponseFunkoDto {
-    const responseFunkoDto = new ResponseFunkoDto()
-    responseFunkoDto.nombre = funko.nombre
-    responseFunkoDto.cantidad = funko.cantidad
-    responseFunkoDto.imagen = funko.imagen
-    responseFunkoDto.createdAt = funko.createdAt
-    responseFunkoDto.updatedAt = funko.updatedAt
-    responseFunkoDto.categoria = funko.categoria
-    responseFunkoDto.isActive = funko.isActive
+    const responseFunkoDto = plainToClass(ResponseFunkoDto, funko)
+    if (funko.categoria && funko.categoria.nombre) {
+      responseFunkoDto.categoria = funko.categoria.nombre
+    } else {
+      responseFunkoDto.categoria = null
+    }
     return responseFunkoDto
   }
 }

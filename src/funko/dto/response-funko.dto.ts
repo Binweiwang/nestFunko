@@ -1,4 +1,5 @@
 export class ResponseFunkoDto {
+  id: number
   nombre: string
   cantidad: number
   imagen: string
