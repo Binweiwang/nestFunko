@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS "Funkos";
 DROP SEQUENCE IF EXISTS "Funkos_id_seq";
-CREATE SEQUENCE "Funkos_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 999999999 CACHE 3;
+CREATE SEQUENCE "Funkos_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 999999999 START 4 CACHE 1;
 
 CREATE TABLE "public"."Funkos" (
                                    "id" integer DEFAULT nextval('"Funkos_id_seq"') NOT NULL,
