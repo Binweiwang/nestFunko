@@ -11,6 +11,11 @@ import { Repository } from 'typeorm'
 import { v4 as uuidv4 } from 'uuid'
 import { Categoria } from './entities/categoria.entity'
 import { CategoriasMapper } from './mapper/categorias.mapper'
+import {
+  Notificacion,
+  NotificacionTipo,
+} from '../websockets/models/notificacion.model'
+import { NotificationsCategoriaGateway } from '../websockets/notifications-categoria/notifications-categoria.gateway'
 
 @Injectable()
 export class CategoriasService {
@@ -20,6 +25,7 @@ export class CategoriasService {
     @InjectRepository(Categoria)
     private readonly categoriaRepository: Repository<Categoria>,
     private readonly categoriasMapper: CategoriasMapper,
+    private readonly categoriaNotificacionGateway: NotificationsCategoriaGateway,
   ) {}
 
   async findAll() {
@@ -54,6 +60,7 @@ export class CategoriasService {
       ...categoriaToCreate,
       id: uuidv4(),
     })
+    this.onChange(NotificacionTipo.CREATE, res)
     return res
   }
 
@@ -78,6 +85,7 @@ export class CategoriasService {
       ...categoryToUpdated,
       ...updateCategoriaDto,
     })
+    this.onChange(NotificacionTipo.UPDATE, res)
     return res
   }
 
@@ -85,6 +93,7 @@ export class CategoriasService {
     this.logger.log(`Remove categoria by id:${id}`)
     const categoriaToRemove = await this.findOne(id)
     const res = await this.categoriaRepository.remove(categoriaToRemove)
+    this.onChange(NotificacionTipo.DELETE, res)
     return res
   }
 
@@ -96,6 +105,7 @@ export class CategoriasService {
       updatedAt: new Date(),
       isDeleted: true,
     })
+    this.onChange(NotificacionTipo.DELETE, res)
     return res
   }
 
@@ -106,5 +116,15 @@ export class CategoriasService {
         nombre: nombreCategoria.toLowerCase(),
       })
       .getOne()
+  }
+
+  private onChange(tipo: NotificacionTipo, data: Categoria) {
+    const notificacion = new Notificacion<Categoria>(
+      'Categoria',
+      tipo,
+      data,
+      new Date(),
+    )
+    this.categoriaNotificacionGateway.sendMessage(notificacion)
   }
 }

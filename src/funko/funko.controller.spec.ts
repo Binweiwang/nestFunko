@@ -42,6 +42,7 @@ describe('FunkoController', () => {
     it('busca un funko', async () => {
       const id = 1
       const testFunko: ResponseFunkoDto = {
+        id: 1,
         nombre: 'test',
         imagen: 'test',
         categoria: 'test',

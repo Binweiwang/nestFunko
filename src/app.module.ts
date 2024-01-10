@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { FunkoModule } from './funko/funko.module'
-import { FunkoController } from './funko/funko.controller'
-import { FunkoService } from './funko/funko.service'
-import { FunkoMapper } from './funko/mapper/funko.nestfunkomapper'
 import { CategoriasModule } from './categorias/categorias.module'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { StorageModule } from './storage/storage.module'
+import { NotificationsModule } from './websockets/notifications.module'
 
 @Module({
   imports: [
@@ -22,6 +21,8 @@ import { TypeOrmModule } from '@nestjs/typeorm'
       entities: [`${__dirname}` + `/**/*.entity{.ts,.js}`],
       synchronize: true,
     }),
+    StorageModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [],
