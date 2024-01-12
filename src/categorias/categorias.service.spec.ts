@@ -6,12 +6,13 @@ import { Categoria } from './entities/categoria.entity'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { CreateCategoriaDto } from './dto/create-categoria.dto'
 import { BadRequestException } from '@nestjs/common'
+import { NotificationsCategoriaGateway } from '../websockets/notifications-categoria/notifications-categoria.gateway'
 
 describe('CategoriasService', () => {
   let service: CategoriasService
   let mapper: CategoriasMapper
   let categoriarepositorio: Repository<Categoria>
-
+  let categoriaNotificacionGatewayMock: NotificationsCategoriaGateway
   const categoriasMapperMock = {
     toEntity: jest.fn(),
   }
@@ -20,6 +21,10 @@ describe('CategoriasService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CategoriasService,
+        {
+          provide: NotificationsCategoriaGateway,
+          useValue: categoriaNotificacionGatewayMock,
+        },
         { provide: CategoriasMapper, useValue: categoriasMapperMock },
         {
           provide: getRepositoryToken(Categoria),
