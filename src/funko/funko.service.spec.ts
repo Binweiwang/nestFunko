@@ -9,25 +9,43 @@ import { getRepositoryToken } from '@nestjs/typeorm'
 import { CreateFunkoDto } from './dto/create-funko.dto'
 import { BadRequestException } from '@nestjs/common'
 import { UpdateFunkoDto } from './dto/update-funko.dto'
+import { NotificationsFunkoGateway } from '../websockets/notifications-funko/notifications-funko.gateway'
+import { StorageService } from '../storage/storage.service'
+import { NotificationsModule } from '../websockets/notifications.module'
 
 describe('FunkoService', () => {
   let service: FunkoService
   let funkoRepository: Repository<Funko>
   let categoriaRepository: Repository<Categoria>
   let mapper: FunkoMapper
+  let notificationsFunkoGateway: NotificationsFunkoGateway
+  let storageService: StorageService
 
   const funkosMapperMock = {
     toFunko: jest.fn(),
     funkoToResponseFunkoDto: jest.fn(),
   }
+  const storageServiceMock = {
+    removeFile: jest.fn(),
+    getFileNameWithoutUrl: jest.fn(),
+  }
+  const notificacionFunkoGatewayMock = {
+    sendMessage: jest.fn(),
+  }
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [NotificationsModule],
       providers: [
         FunkoService,
+        {
+          provide: NotificationsFunkoGateway,
+          useValue: notificacionFunkoGatewayMock,
+        },
         { provide: FunkoMapper, useValue: funkosMapperMock },
         { provide: getRepositoryToken(Funko), useClass: Repository },
         { provide: getRepositoryToken(Categoria), useClass: Repository },
+        { provide: StorageService, useValue: storageServiceMock },
       ],
     }).compile()
 
@@ -37,6 +55,10 @@ describe('FunkoService', () => {
       getRepositoryToken(Categoria),
     )
     mapper = module.get<FunkoMapper>(FunkoMapper)
+    storageService = module.get<StorageService>(StorageService)
+    notificationsFunkoGateway = module.get<NotificationsFunkoGateway>(
+      NotificationsFunkoGateway,
+    )
   })
 
   it('should be defined', () => {
@@ -199,9 +221,13 @@ describe('FunkoService', () => {
   describe('removeSoft', () => {
     it('eliminar un funko', async () => {
       const mockFunko = new Funko()
+      const mockFunkoDto = new ResponseFunkoDto()
       jest.spyOn(service, 'exists').mockResolvedValue(mockFunko)
       jest.spyOn(funkoRepository, 'save').mockResolvedValue(mockFunko)
-      expect(await service.removeSoft(1)).toEqual(mockFunko)
+      jest
+        .spyOn(mapper, 'funkoToResponseFunkoDto')
+        .mockReturnValue(mockFunkoDto)
+      expect(await service.removeSoft(1)).toEqual(mockFunkoDto)
     })
   })
   describe('exists', () => {
@@ -216,6 +242,35 @@ describe('FunkoService', () => {
       await expect(service.exists(1)).rejects.toThrow(
         'Funko no encontrado 1 no existe',
       )
+    })
+  })
+  describe('updateImage', () => {
+    it('should update a producto image', async () => {
+      const mockRequest = {
+        protocol: 'http',
+        get: () => 'localhost',
+      }
+      const mockFile = {
+        filename: 'new_image',
+      }
+
+      const mockProductoEntity = new Funko()
+      const mockResponseProductoDto = new ResponseFunkoDto()
+
+      jest.spyOn(service, 'exists').mockResolvedValue(mockProductoEntity)
+
+      jest.spyOn(funkoRepository, 'save').mockResolvedValue(mockProductoEntity)
+
+      jest
+        .spyOn(mapper, 'funkoToResponseFunkoDto')
+        .mockReturnValue(mockResponseProductoDto)
+
+      expect(
+        await service.updateImage(1, mockFile as any, mockRequest as any, true),
+      ).toEqual(mockResponseProductoDto)
+
+      expect(storageService.removeFile).toHaveBeenCalled()
+      expect(storageService.getFileNameWithoutUrl).toHaveBeenCalled()
     })
   })
 })
