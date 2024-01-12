@@ -5,9 +5,11 @@ import { CategoriasModule } from './categorias/categorias.module'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { StorageModule } from './storage/storage.module'
 import { NotificationsModule } from './websockets/notifications.module'
+import { CacheModule } from '@nestjs/cache-manager'
 
 @Module({
   imports: [
+    CacheModule.register(),
     ConfigModule.forRoot(),
     FunkoModule,
     CategoriasModule,
