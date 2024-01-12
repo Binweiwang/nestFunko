@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -16,6 +17,15 @@ import {
   NotificacionTipo,
 } from '../websockets/models/notificacion.model'
 import { NotificationsCategoriaGateway } from '../websockets/notifications-categoria/notifications-categoria.gateway'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { Cache } from 'cache-manager'
+import { hash } from 'typeorm/util/StringUtils'
+import {
+  FilterOperator,
+  FilterSuffix,
+  paginate,
+  PaginateQuery,
+} from 'nestjs-paginate'
 
 @Injectable()
 export class CategoriasService {
@@ -26,21 +36,46 @@ export class CategoriasService {
     private readonly categoriaRepository: Repository<Categoria>,
     private readonly categoriasMapper: CategoriasMapper,
     private readonly categoriaNotificacionGateway: NotificationsCategoriaGateway,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async findAll() {
+  async findAll(query: PaginateQuery) {
     this.logger.log('Buscar todas categorias')
-    const res = await this.categoriaRepository.find()
+    const cache = await this.cacheManager.get(
+      `todo_categorias_page_${hash(JSON.stringify(query))}}`,
+    )
+    if (cache) {
+      return cache
+    }
+    const res = await paginate(query, this.categoriaRepository, {
+      sortableColumns: ['nombre'],
+      defaultSortBy: [['nombre', 'ASC']],
+      searchableColumns: ['nombre'],
+      filterableColumns: {
+        nombre: [FilterOperator.EQ, FilterSuffix.NOT],
+        isDeleted: [FilterOperator.EQ, FilterSuffix.NOT],
+      },
+    })
+    await this.cacheManager.set(
+      `todo_categorias_page_${hash(JSON.stringify(query))}`,
+      res,
+      60,
+    )
     return res
   }
 
   async findOne(id: string): Promise<Categoria> {
     this.logger.log(`Find one categoria by id:${id}`)
+    const cache: Categoria = await this.cacheManager.get(`categoria-${id}`)
+    if (cache) {
+      return cache
+    }
     const categoriaToFound = await this.categoriaRepository.findOneBy({ id })
     if (!categoriaToFound) {
       this.logger.log(`Categoria with id:${id} not found`)
       throw new NotFoundException(`Categoria con id ${id} no encontrada`)
     }
+    this.cacheManager.set(`categoria-${id}`, categoriaToFound, 60000)
     return categoriaToFound
   }
 
@@ -61,6 +96,7 @@ export class CategoriasService {
       id: uuidv4(),
     })
     this.onChange(NotificacionTipo.CREATE, res)
+    await this.invalidateCacheKey('categorias')
     return res
   }
 
@@ -86,6 +122,8 @@ export class CategoriasService {
       ...updateCategoriaDto,
     })
     this.onChange(NotificacionTipo.UPDATE, res)
+    await this.invalidateCacheKey('categorias')
+    await this.invalidateCacheKey(`categoria-${id}`)
     return res
   }
 
@@ -94,6 +132,8 @@ export class CategoriasService {
     const categoriaToRemove = await this.findOne(id)
     const res = await this.categoriaRepository.remove(categoriaToRemove)
     this.onChange(NotificacionTipo.DELETE, res)
+    await this.invalidateCacheKey('categorias')
+    await this.invalidateCacheKey(`categoria-${id}`)
     return res
   }
 
@@ -106,6 +146,8 @@ export class CategoriasService {
       isDeleted: true,
     })
     this.onChange(NotificacionTipo.DELETE, res)
+    await this.invalidateCacheKey('categorias')
+    await this.invalidateCacheKey(`categoria-${id}`)
     return res
   }
 
@@ -126,5 +168,12 @@ export class CategoriasService {
       new Date(),
     )
     this.categoriaNotificacionGateway.sendMessage(notificacion)
+  }
+
+  async invalidateCacheKey(keyPattern: string): Promise<void> {
+    const cacheKeys = await this.cacheManager.store.keys()
+    const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
+    const promises = keysToDelete.map((key) => this.cacheManager.del(key))
+    await Promise.all(promises)
   }
 }
