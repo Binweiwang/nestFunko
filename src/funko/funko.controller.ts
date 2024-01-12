@@ -23,9 +23,9 @@ import { UpdateFunkoDto } from './dto/update-funko.dto'
 import { FunkoExistsGuard } from './guards/funko-exists.guard'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
-import { extname } from 'path'
+import { extname, parse } from 'path'
 import { Request } from 'express'
-import { parse } from 'path'
+import { Paginate, PaginateQuery } from 'nestjs-paginate'
 
 @Controller('funkos')
 export class FunkoController {
@@ -40,8 +40,8 @@ export class FunkoController {
   }
 
   @Get()
-  async findAll() {
-    return await this.funkoService.findAll()
+  async findAll(@Paginate() query: PaginateQuery) {
+    return await this.funkoService.findAll(query)
   }
 
   @Get(':id')
