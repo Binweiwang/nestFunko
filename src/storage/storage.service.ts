@@ -38,7 +38,7 @@ export class StorageService {
       throw new NotFoundException(`El fichero ${filename} no existe.`)
     }
   }
-  getFileNameWithouUrl(fileUrl: string): string {
+  getFileNameWithoutUrl(fileUrl: string): string {
     try {
       const url = new URL(fileUrl)
       const pathname = url.pathname
