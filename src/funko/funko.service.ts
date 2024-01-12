@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -19,6 +20,15 @@ import {
   Notificacion,
   NotificacionTipo,
 } from '../websockets/models/notificacion.model'
+import { Cache } from 'cache-manager'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import {
+  FilterOperator,
+  FilterSuffix,
+  paginate,
+  PaginateQuery,
+} from 'nestjs-paginate'
+import { hash } from 'typeorm/util/StringUtils'
 
 @Injectable()
 export class FunkoService {
@@ -32,6 +42,7 @@ export class FunkoService {
     private readonly categoriaRepository: Repository<Categoria>,
     private readonly storageService: StorageService,
     private readonly funkoNotificationsGateway: NotificationsFunkoGateway,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(createFunkoDto: CreateFunkoDto) {
@@ -42,10 +53,17 @@ export class FunkoService {
     const savedFunko = await this.funkoRepository.save(funkoToCreate)
     const dto = this.funkoMapper.funkoToResponseFunkoDto(savedFunko)
     this.onChange(NotificacionTipo.CREATE, dto)
+    await this.invalidateCacheKey('funkos')
     return dto
   }
 
   public async checkCategoria(nombreCategoria: string): Promise<Categoria> {
+    const cache: Categoria = await this.cacheManager.get(
+      `categoria-${nombreCategoria}`,
+    )
+    if (cache) {
+      return cache
+    }
     const categoria = await this.categoriaRepository
       .createQueryBuilder()
       .where('LOWER(nombre) = LOWER(:nombre)', {
@@ -56,20 +74,55 @@ export class FunkoService {
     if (!categoria) {
       throw new BadRequestException(`La categoria ${nombreCategoria} no existe`)
     }
-
+    await this.cacheManager.set(`categoria-${nombreCategoria}`, categoria, 60)
     return categoria
   }
 
-  async findAll() {
+  async findAll(query: PaginateQuery) {
     this.logger.log('Buscar todos los funkos')
-    return this.funkoRepository
+    const cache = await this.cacheManager.get(
+      `todo_funkos_page_${hash(JSON.stringify(query))}`,
+    )
+    if (cache) {
+      return cache
+    }
+    const queryBuilder = this.funkoRepository
       .createQueryBuilder('funko')
       .leftJoinAndSelect('funko.categoria', 'categoria')
-      .getMany()
+
+    const pagination = await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'nombre', 'categoria.nombre', 'precio'],
+      defaultSortBy: [['id', 'ASC']],
+      searchableColumns: ['nombre', 'cantidad', 'precio', 'categoria'],
+      filterableColumns: {
+        nombre: [FilterOperator.EQ, FilterSuffix.NOT],
+        cantidad: true,
+        precio: true,
+        categoria: [FilterOperator.EQ, FilterSuffix.NOT],
+        isDeleted: [FilterOperator.EQ, FilterSuffix.NOT],
+      },
+    })
+    const res = {
+      data: (pagination.data ?? []).map((funko) =>
+        this.funkoMapper.funkoToResponseFunkoDto(funko),
+      ),
+      meta: pagination.meta,
+      links: pagination.links,
+    }
+    await this.cacheManager.set(
+      `todo_funkos_page_${hash(JSON.stringify(query))}`,
+      res,
+      60,
+    )
+    return res
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<ResponseFunkoDto> {
     this.logger.log('Buscar un funko')
+    const cache: ResponseFunkoDto = await this.cacheManager.get(`funko-${id}`)
+    if (cache) {
+      return cache
+    }
     const foundFunko = await this.funkoRepository
       .createQueryBuilder('funko')
       .leftJoinAndSelect('funko.categoria', 'categoria')
@@ -78,6 +131,7 @@ export class FunkoService {
     if (!foundFunko) {
       throw new NotFoundException(`Funko no encontrado ${id} no existe`)
     }
+    await this.cacheManager.set(`funko-${id}`, foundFunko, 60000)
     return this.funkoMapper.funkoToResponseFunkoDto(foundFunko)
   }
 
@@ -101,6 +155,8 @@ export class FunkoService {
     })
     const dto = this.funkoMapper.funkoToResponseFunkoDto(funkoUpdated)
     this.onChange(NotificacionTipo.UPDATE, dto)
+    await this.invalidateCacheKey('funkos')
+    await this.invalidateCacheKey(`funko-${id}`)
     return dto
   }
 
@@ -109,6 +165,8 @@ export class FunkoService {
     const funkoToRemove = await this.exists(id)
     const dto = this.funkoMapper.funkoToResponseFunkoDto(funkoToRemove)
     this.onChange(NotificacionTipo.DELETE, dto)
+    await this.invalidateCacheKey('funkos')
+    await this.invalidateCacheKey(`funko-${id}`)
     return dto
   }
 
@@ -119,14 +177,21 @@ export class FunkoService {
     this.funkoRepository.save(funkoToRemove)
     const dto = this.funkoMapper.funkoToResponseFunkoDto(funkoToRemove)
     this.onChange(NotificacionTipo.DELETE, dto)
+    await this.invalidateCacheKey('funkos')
+    await this.invalidateCacheKey(`funko-${id}`)
     return dto
   }
 
   public async exists(id: number): Promise<Funko> {
+    const cache: Funko = await this.cacheManager.get(`funko-${id}`)
+    if (cache) {
+      return cache
+    }
     const funko = await this.funkoRepository.findOneBy({ id })
     if (!funko) {
       throw new BadRequestException(`Funko no encontrado ${id} no existe`)
     }
+    await this.cacheManager.set(`funko-${id}`, funko, 60)
     return funko
   }
 
@@ -141,7 +206,7 @@ export class FunkoService {
       this.logger.log(`Eliminando imagen anterior ${funkoToUpdate.imagen}`)
       let imagePath = funkoToUpdate.imagen
       if (withUrl) {
-        imagePath = this.storageService.getFileNameWithouUrl(
+        imagePath = this.storageService.getFileNameWithoutUrl(
           funkoToUpdate.imagen,
         )
       }
@@ -159,17 +224,24 @@ export class FunkoService {
     if (withUrl) {
       this.logger.log(`Guardando imagen ${file.filename}`)
       const apiVersion = process.env.API_VERSION ? process.env.API_VERSION : ''
-      filePath = `${req.protocol}://${req.get('host')}/${apiVersion}/storage/${
-        file.filename
-      }`
+      filePath = `${file.filename}`
     } else {
       filePath = file.filename
     }
     funkoToUpdate.imagen = filePath
     const funkoUpdated = await this.funkoRepository.save(funkoToUpdate)
     const dto = this.funkoMapper.funkoToResponseFunkoDto(funkoUpdated)
+    await this.invalidateCacheKey('funkos')
+    await this.invalidateCacheKey(`funko-${id}`)
     this.onChange(NotificacionTipo.UPDATE, dto)
     return dto
+  }
+
+  async invalidateCacheKey(KeyPattern: string) {
+    const cacheKeys = await this.cacheManager.store.keys()
+    const keysToDelete = cacheKeys.filter((key) => key.startsWith(KeyPattern))
+    const promises = keysToDelete.map((key) => this.cacheManager.del(key))
+    await Promise.all(promises)
   }
 
   private onChange(tipo: NotificacionTipo, data: ResponseFunkoDto) {
