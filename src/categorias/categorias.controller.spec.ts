@@ -3,6 +3,7 @@ import { CategoriasController } from './categorias.controller'
 import { CategoriasService } from './categorias.service'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { Categoria } from './entities/categoria.entity'
+import { Paginated } from 'nestjs-paginate'
 
 describe('CategoriasController', () => {
   let controller: CategoriasController
@@ -35,18 +36,33 @@ describe('CategoriasController', () => {
   })
   describe('findAll', () => {
     it('should get all categorias', async () => {
-      const testCategories = [
-        {
-          id: '1',
-          nombre: 'test',
-          isDeleted: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          funkos: [],
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'categorias',
+      }
+      const testCategories = {
+        data: [],
+        meta: {
+          itemsPerPage: 10,
+          totalItems: 1,
+          currentPage: 1,
+          totalPages: 1,
         },
-      ]
+        links: {
+          current: 'categorias?page=1&limit=10&sortBy=nombre:ASC',
+        },
+      } as Paginated<Categoria>
+
       jest.spyOn(service, 'findAll').mockResolvedValue(testCategories)
-      expect(await controller.findAll()).toEqual(testCategories)
+      const result: any = await controller.findAll(paginateOptions)
+      expect(await controller.findAll(paginateOptions)).toEqual(testCategories)
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.currentPage).toEqual(paginateOptions.page)
+      expect(result.meta.totalPages).toEqual(1)
+      expect(result.links.current).toEqual(
+        `categorias?page=${paginateOptions.page}&limit=${paginateOptions.limit}&sortBy=nombre:ASC`,
+      )
     })
   })
   describe('findOne', () => {
