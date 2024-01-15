@@ -1,8 +1,8 @@
 import { INestApplication, NotFoundException } from '@nestjs/common'
-import { Categoria } from '../../../src/categorias/entities/categoria.entity'
+import { Categoria } from '../../../src/rest/categorias/entities/categoria.entity'
 import { Test, TestingModule } from '@nestjs/testing'
-import { CategoriasController } from '../../../src/categorias/categorias.controller'
-import { CategoriasService } from '../../../src/categorias/categorias.service'
+import { CategoriasController } from '../../../src/rest/categorias/categorias.controller'
+import { CategoriasService } from '../../../src/rest/categorias/categorias.service'
 import * as request from 'supertest'
 describe('CategoriasController (e2e)', () => {
   let app: INestApplication

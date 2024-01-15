@@ -4,7 +4,7 @@ import { CategoriasController } from './categorias.controller'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Categoria } from './entities/categoria.entity'
 import { CategoriasMapper } from './mapper/categorias.mapper'
-import { NotificationsModule } from '../websockets/notifications.module'
+import { NotificationsModule } from '../../websockets/notifications.module'
 import { CacheModule } from '@nestjs/cache-manager'
 
 @Module({

@@ -2,7 +2,7 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets'
 import { Logger } from '@nestjs/common'
 import { Server, Socket } from 'socket.io'
 import { Notificacion } from '../models/notificacion.model'
-import { Categoria } from '../../categorias/entities/categoria.entity'
+import { Categoria } from '../../rest/categorias/entities/categoria.entity'
 
 const ENDPOINT: string = `/ws/${process.env.API_VERSION || 'v1'}/categorias`
 

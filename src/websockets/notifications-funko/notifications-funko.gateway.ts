@@ -1,7 +1,7 @@
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets'
 import { Logger } from '@nestjs/common'
 import { Server, Socket } from 'socket.io'
-import { ResponseFunkoDto } from '../../funko/dto/response-funko.dto'
+import { ResponseFunkoDto } from '../../rest/funko/dto/response-funko.dto'
 import { Notificacion } from '../models/notificacion.model'
 
 const ENDPOINT: string = `/ws/${process.env.API_VERSION || 'v1'}/funkos`

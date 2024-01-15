@@ -1,8 +1,8 @@
 import { INestApplication } from '@nestjs/common'
-import { ResponseFunkoDto } from '../../../src/funko/dto/response-funko.dto'
+import { ResponseFunkoDto } from '../../../src/rest/funko/dto/response-funko.dto'
 import { Test, TestingModule } from '@nestjs/testing'
-import { FunkoController } from '../../../src/funko/funko.controller'
-import { FunkoService } from '../../../src/funko/funko.service'
+import { FunkoController } from '../../../src/rest/funko/funko.controller'
+import { FunkoService } from '../../../src/rest/funko/funko.service'
 import * as request from 'supertest'
 
 describe('FunkosController (e2e)', () => {

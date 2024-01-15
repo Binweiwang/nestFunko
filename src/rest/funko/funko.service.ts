@@ -15,11 +15,11 @@ import { Categoria } from '../categorias/entities/categoria.entity'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
 import { StorageService } from '../storage/storage.service'
 import { Request } from 'express'
-import { NotificationsFunkoGateway } from '../websockets/notifications-funko/notifications-funko.gateway'
+import { NotificationsFunkoGateway } from '../../websockets/notifications-funko/notifications-funko.gateway'
 import {
   Notificacion,
   NotificacionTipo,
-} from '../websockets/models/notificacion.model'
+} from '../../websockets/models/notificacion.model'
 import { Cache } from 'cache-manager'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import {

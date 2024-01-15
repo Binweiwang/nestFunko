@@ -15,8 +15,8 @@ import { CategoriasMapper } from './mapper/categorias.mapper'
 import {
   Notificacion,
   NotificacionTipo,
-} from '../websockets/models/notificacion.model'
-import { NotificationsCategoriaGateway } from '../websockets/notifications-categoria/notifications-categoria.gateway'
+} from '../../websockets/models/notificacion.model'
+import { NotificationsCategoriaGateway } from '../../websockets/notifications-categoria/notifications-categoria.gateway'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Cache } from 'cache-manager'
 import { hash } from 'typeorm/util/StringUtils'
