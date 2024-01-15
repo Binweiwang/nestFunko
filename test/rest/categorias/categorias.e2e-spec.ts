@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { CategoriasController } from '../../../src/rest/categorias/categorias.controller'
 import { CategoriasService } from '../../../src/rest/categorias/categorias.service'
 import * as request from 'supertest'
+
 describe('CategoriasController (e2e)', () => {
   let app: INestApplication
   const myEndpoint = `/categorias`
