@@ -1,4 +1,4 @@
-import { INestApplication, NotFoundException } from '@nestjs/common'
+import { INestApplication } from '@nestjs/common'
 import { ResponseFunkoDto } from '../../../src/funko/dto/response-funko.dto'
 import { Test, TestingModule } from '@nestjs/testing'
 import { FunkoController } from '../../../src/funko/funko.controller'
@@ -39,6 +39,7 @@ describe('FunkosController (e2e)', () => {
     remove: jest.fn(),
     removeSoft: jest.fn(),
     exists: jest.fn(),
+    updateImage: jest.fn(),
   }
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -119,6 +120,20 @@ describe('FunkosController (e2e)', () => {
       await request(app.getHttpServer())
         .delete(`${myEndpoint}/${myFunkoResponse}`)
         .expect(204)
+    })
+  })
+  describe('PATCH /funkos/imagen/:id', () => {
+    it('should update the product image', async () => {
+      const file = new Buffer('file')
+
+      mockFunkosService.exists.mockResolvedValue(true)
+      mockFunkosService.updateImage.mockResolvedValue(myFunkoResponse)
+
+      await request(app.getHttpServer())
+        .patch(`${myEndpoint}/imagen/${myFunkoResponse.id}`)
+        .attach('file', file, 'image.jpg')
+        .set('Content-Type', 'multipart/form-data')
+        .expect(200)
     })
   })
 })

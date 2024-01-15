@@ -4,6 +4,9 @@ import { FunkoService } from './funko.service'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
 import { CreateFunkoDto } from './dto/create-funko.dto'
 import { HttpStatus } from '@nestjs/common'
+import { Paginated } from 'nestjs-paginate'
+import { Funko } from './entities/funko.entity'
+import { Request } from 'express'
 
 describe('FunkoController', () => {
   let controller: FunkoController
@@ -16,6 +19,7 @@ describe('FunkoController', () => {
     update: jest.fn(),
     remove: jest.fn(),
     removeSoft: jest.fn(),
+    updateImage: jest.fn(),
   }
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,10 +36,28 @@ describe('FunkoController', () => {
   })
   describe('findAll', () => {
     it('todos los funkos', async () => {
-      const testFunkos = []
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'funkos',
+      }
+      const testFunkos = {
+        data: [],
+        meta: {
+          itemsPerPage: 10,
+          totalItems: 1,
+          currentPage: 1,
+          totalPages: 1,
+        },
+        links: {
+          current: 'funkos?page=1&limit=10&sortBy=nombre:ASC',
+        },
+      } as Paginated<Funko>
       jest.spyOn(service, 'findAll').mockResolvedValue(testFunkos)
-      const result: any = await controller.findAll()
-      expect(result).toBe(testFunkos)
+      const result: any = await controller.findAll(paginateOptions)
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.totalPages).toEqual(1)
+      expect(service.findAll).toHaveBeenCalled()
     })
   })
   describe('findOne', () => {
@@ -100,6 +122,25 @@ describe('FunkoController', () => {
       // Assert
       expect(result).toEqual(HttpStatus.NO_CONTENT)
       expect(service.removeSoft).toHaveBeenCalledWith(id)
+    })
+  })
+  describe('updateImage', () => {
+    it('should update a producto image', async () => {
+      const mockId = 1
+      const mockFile = {} as Express.Multer.File
+      const mockReq = {} as Request
+      const mockResult: ResponseFunkoDto = new ResponseFunkoDto()
+
+      jest.spyOn(service, 'updateImage').mockResolvedValue(mockResult)
+
+      await controller.updateImage(mockId, mockFile, mockReq)
+      expect(service.updateImage).toHaveBeenCalledWith(
+        mockId,
+        mockFile,
+        mockReq,
+        true,
+      )
+      expect(mockResult).toBeInstanceOf(ResponseFunkoDto)
     })
   })
 })

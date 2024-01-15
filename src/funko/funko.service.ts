@@ -8,7 +8,7 @@ import {
 import { CreateFunkoDto } from './dto/create-funko.dto'
 import { UpdateFunkoDto } from './dto/update-funko.dto'
 import { Funko } from './entities/funko.entity'
-import { FunkoMapper } from './mapper/funko.nestfunkomapper'
+import { FunkoMapper } from './mapper/funko.mapper'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Categoria } from '../categorias/entities/categoria.entity'
@@ -95,6 +95,7 @@ export class FunkoService {
       defaultSortBy: [['id', 'ASC']],
       searchableColumns: ['nombre', 'cantidad', 'precio', 'categoria'],
       filterableColumns: {
+        id: [FilterOperator.EQ, FilterSuffix.NOT],
         nombre: [FilterOperator.EQ, FilterSuffix.NOT],
         cantidad: true,
         precio: true,
@@ -237,7 +238,7 @@ export class FunkoService {
     return dto
   }
 
-  async invalidateCacheKey(KeyPattern: string) {
+  async invalidateCacheKey(KeyPattern: string): Promise<void> {
     const cacheKeys = await this.cacheManager.store.keys()
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(KeyPattern))
     const promises = keysToDelete.map((key) => this.cacheManager.del(key))

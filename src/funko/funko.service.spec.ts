@@ -3,7 +3,7 @@ import { FunkoService } from './funko.service'
 import { Repository } from 'typeorm'
 import { Funko } from './entities/funko.entity'
 import { Categoria } from '../categorias/entities/categoria.entity'
-import { FunkoMapper } from './mapper/funko.nestfunkomapper'
+import { FunkoMapper } from './mapper/funko.mapper'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { CreateFunkoDto } from './dto/create-funko.dto'
@@ -12,14 +12,16 @@ import { UpdateFunkoDto } from './dto/update-funko.dto'
 import { NotificationsFunkoGateway } from '../websockets/notifications-funko/notifications-funko.gateway'
 import { StorageService } from '../storage/storage.service'
 import { NotificationsModule } from '../websockets/notifications.module'
+import { Cache } from 'cache-manager'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
 
 describe('FunkoService', () => {
   let service: FunkoService
   let funkoRepository: Repository<Funko>
   let categoriaRepository: Repository<Categoria>
   let mapper: FunkoMapper
-  let notificationsFunkoGateway: NotificationsFunkoGateway
   let storageService: StorageService
+  let cacheManager: Cache
 
   const funkosMapperMock = {
     toFunko: jest.fn(),
@@ -31,6 +33,13 @@ describe('FunkoService', () => {
   }
   const notificacionFunkoGatewayMock = {
     sendMessage: jest.fn(),
+  }
+  const cacheManagerMock = {
+    get: jest.fn(() => Promise.resolve()),
+    set: jest.fn(() => Promise.resolve()),
+    store: {
+      keys: jest.fn(),
+    },
   }
 
   beforeEach(async () => {
@@ -46,6 +55,7 @@ describe('FunkoService', () => {
         { provide: getRepositoryToken(Funko), useClass: Repository },
         { provide: getRepositoryToken(Categoria), useClass: Repository },
         { provide: StorageService, useValue: storageServiceMock },
+        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
       ],
     }).compile()
 
@@ -56,9 +66,7 @@ describe('FunkoService', () => {
     )
     mapper = module.get<FunkoMapper>(FunkoMapper)
     storageService = module.get<StorageService>(StorageService)
-    notificationsFunkoGateway = module.get<NotificationsFunkoGateway>(
-      NotificationsFunkoGateway,
-    )
+    cacheManager = module.get<Cache>(CACHE_MANAGER)
   })
 
   it('should be defined', () => {
@@ -96,17 +104,34 @@ describe('FunkoService', () => {
   })
   describe('findAll', () => {
     it('buscar todos los funkos', async () => {
-      const funko = new Funko()
-      const funkoDto = new ResponseFunkoDto()
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'funkos',
+      }
+      jest.spyOn(cacheManager, 'get').mockResolvedValue(Promise.resolve(null))
+      jest.spyOn(cacheManager, 'set').mockResolvedValue()
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockReturnValue([funko]),
+        take: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([]),
       }
       jest
         .spyOn(funkoRepository, 'createQueryBuilder')
         .mockReturnValue(mockQueryBuilder as any)
-      jest.spyOn(mapper, 'funkoToResponseFunkoDto').mockReturnValue(funkoDto)
-      expect(await service.findAll()).toEqual([funkoDto])
+      jest
+        .spyOn(mapper, 'funkoToResponseFunkoDto')
+        .mockReturnValue(new ResponseFunkoDto())
+      const result: any = await service.findAll(paginateOptions)
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.currentPage).toEqual(paginateOptions.page)
+      expect(result.links.current).toEqual(
+        `funkos?page=${paginateOptions.page}&limit=${paginateOptions.limit}&sortBy=id:ASC`,
+      )
+      expect(cacheManager.get).toHaveBeenCalled()
+      expect(cacheManager.set).toHaveBeenCalled()
     })
   })
   describe('create', () => {
@@ -120,6 +145,7 @@ describe('FunkoService', () => {
       jest
         .spyOn(mapper, 'funkoToResponseFunkoDto')
         .mockReturnValue(mockFunkoDto)
+      jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
       expect(await service.create(new CreateFunkoDto())).toEqual(mockFunkoDto)
     })
     it('crear un funko con una categoria que no existe', async () => {
@@ -169,6 +195,7 @@ describe('FunkoService', () => {
       jest
         .spyOn(mapper, 'funkoToResponseFunkoDto')
         .mockReturnValue(mockFunkoDto)
+      jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
       expect(await service.update(1, new CreateFunkoDto())).toEqual(
         mockFunkoDto,
       )
@@ -207,6 +234,7 @@ describe('FunkoService', () => {
       jest
         .spyOn(mapper, 'funkoToResponseFunkoDto')
         .mockReturnValue(mockFunkoDto)
+      jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
       expect(await service.update(1, mockUpdateFunkoDto)).toEqual(mockFunkoDto)
     })
   })
@@ -260,7 +288,9 @@ describe('FunkoService', () => {
       jest.spyOn(service, 'exists').mockResolvedValue(mockProductoEntity)
 
       jest.spyOn(funkoRepository, 'save').mockResolvedValue(mockProductoEntity)
-
+      jest
+        .spyOn(cacheManager.store, 'keys')
+        .mockResolvedValue(['someKey1', 'someKey2'])
       jest
         .spyOn(mapper, 'funkoToResponseFunkoDto')
         .mockReturnValue(mockResponseProductoDto)
