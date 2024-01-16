@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { CategoriasController } from '../../../src/rest/categorias/categorias.controller'
 import { CategoriasService } from '../../../src/rest/categorias/categorias.service'
 import * as request from 'supertest'
+import { Paginated } from 'nestjs-paginate'
 
 describe('CategoriasController (e2e)', () => {
   let app: INestApplication
@@ -53,12 +54,30 @@ describe('CategoriasController (e2e)', () => {
 
   describe('GET /categorias', () => {
     it('should return an array of categorias', async () => {
-      mockCategoriasService.findAll.mockResolvedValue([myCategoria])
+      const testCategoria = {
+        data: [],
+        meta: {
+          itemsPerPage: 10,
+          totalItems: 1,
+          currentPage: 1,
+          totalPages: 1,
+        },
+        links: {
+          current: 'categorias?page=1&limit=10&sortBy=nombre:ASC',
+        },
+      } as Paginated<Categoria>
+      const options = {
+        page: 1,
+        limit: 10,
+        path: 'categorias',
+      }
+      mockCategoriasService.findAll.mockResolvedValue([testCategoria])
       const { body } = await request(app.getHttpServer())
         .get(myEndpoint)
+        .query(options)
         .expect(200)
       expect(() => {
-        expect(body).toEqual([myCategoria])
+        expect(body).toEqual([testCategoria])
         expect(mockCategoriasService.findAll).toHaveBeenCalled()
       })
     })
