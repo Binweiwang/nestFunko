@@ -14,11 +14,12 @@ describe('AppController (e2e)', () => {
     app = moduleFixture.createNestApplication()
     await app.init()
   })
+
   afterEach(async () => {
     await app.close()
   })
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer()).get('/').expect(404)
+  it('/ (GET)', async () => {
+    return request(app.getHttpServer()).get('/').expect(200)
   })
 })

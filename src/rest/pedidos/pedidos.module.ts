@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { CacheModule } from '@nestjs/cache-manager'
 import { Funko } from '../funko/entities/funko.entity'
 import { Pedido } from './schemas/pedido.schema'
+import { PedidosMapper } from './mapper/pedidos.mapper'
 
 function mongoosePaginate() {}
 
@@ -25,7 +26,7 @@ function mongoosePaginate() {}
     CacheModule.register(),
   ],
   controllers: [PedidosController],
-  providers: [PedidosService],
+  providers: [PedidosService, PedidosMapper],
   exports: [PedidosService],
 })
 export class PedidosModule {}

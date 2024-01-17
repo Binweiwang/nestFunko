@@ -7,16 +7,6 @@ import {
   Min,
 } from 'class-validator'
 
-export class CreatePedidoDto {
-  @IsNotEmpty()
-  @IsNumber()
-  idCliente: number
-  @IsNotEmpty()
-  cliente: ClienteDto
-  @IsNotEmpty()
-  lineaPedido: LineaPedidoDto[]
-}
-
 export class DireccionDto {
   @IsString()
   @MaxLength(100)
@@ -77,4 +67,14 @@ export class LineaPedidoDto {
   @IsNotEmpty()
   @Min(0, { message: 'El total debe ser mayor que 0' })
   total: number
+}
+
+export class CreatePedidoDto {
+  @IsNotEmpty()
+  @IsNumber()
+  idCliente: number
+  @IsNotEmpty()
+  cliente: ClienteDto
+  @IsNotEmpty()
+  lineaPedido: LineaPedidoDto[]
 }
