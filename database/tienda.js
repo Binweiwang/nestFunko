@@ -21,7 +21,7 @@ db.createCollection('pedidos')
 db.pedidos.insertMany([
   {
     _id: ObjectId('6536518de9b0d305f193b5ef'),
-    idCliente: 1,
+    idUsuario: 1,
     cliente: {
       nombreCompleto: 'Juan Perez',
       email: 'juanperez@gmail.com',
