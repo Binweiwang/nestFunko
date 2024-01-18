@@ -1,13 +1,12 @@
-import * as process from 'process'
 import { Logger, Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { TypeOrmModule } from '@nestjs/typeorm'
 import { MongooseModule } from '@nestjs/mongoose'
+import { TypeOrmModule } from '@nestjs/typeorm'
 import * as path from 'path'
 
 @Module({
   imports: [
-    // Configurar Postgres
+    // TypeOrm
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async () => ({
