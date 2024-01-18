@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
-import { FunkoModule } from './rest/funko/funko.module'
 import { CategoriasModule } from './rest/categorias/categorias.module'
-import { TypeOrmModule } from '@nestjs/typeorm'
+import { ConfigModule } from '@nestjs/config'
 import { StorageModule } from './rest/storage/storage.module'
-import { NotificationsModule } from './websockets/notifications.module'
 import { CacheModule } from '@nestjs/cache-manager'
 import { DatabaseModule } from './config/database/database.module'
+import { PedidosModule } from './rest/pedidos/pedidos.module'
+import { FunkoModule } from './rest/funko/funko.module'
+import { NotificationsModule } from './websockets/notifications.module'
+import { UsersModule } from './rest/users/users.module'
+import { AuthModule } from './rest/auth/auth.module'
 
 @Module({
   imports: [
@@ -15,20 +17,13 @@ import { DatabaseModule } from './config/database/database.module'
     DatabaseModule,
     FunkoModule,
     CategoriasModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'admin',
-      password: 'admin',
-      database: 'funkos',
-      entities: [`${__dirname}` + `/**/*.entity{.ts,.js}`],
-      synchronize: true,
-    }),
     StorageModule,
     NotificationsModule,
+    DatabaseModule,
+    PedidosModule,
+    UsersModule,
+    AuthModule,
   ],
-  controllers: [],
   providers: [],
 })
 export class AppModule {}
