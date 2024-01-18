@@ -2,7 +2,7 @@ import { PartialType } from '@nestjs/mapped-types'
 import {
   ClienteDto,
   CreatePedidoDto,
-  LineaPedidoDto,
+  LineasPedidoDto,
 } from './create-pedido.dto'
 import { IsNotEmpty, IsNumber } from 'class-validator'
 
@@ -15,5 +15,5 @@ export class UpdatePedidoDto extends PartialType(CreatePedidoDto) {
   cliente: ClienteDto
 
   @IsNotEmpty()
-  lineasPedido: LineaPedidoDto[]
+  lineasPedido: LineasPedidoDto[]
 }

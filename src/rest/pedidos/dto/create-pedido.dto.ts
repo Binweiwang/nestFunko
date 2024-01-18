@@ -51,7 +51,7 @@ export class ClienteDto {
   direccion: DireccionDto
 }
 
-export class LineaPedidoDto {
+export class LineasPedidoDto {
   @IsNotEmpty()
   @IsNumber()
   idFunko: number
@@ -72,9 +72,9 @@ export class LineaPedidoDto {
 export class CreatePedidoDto {
   @IsNotEmpty()
   @IsNumber()
-  idCliente: number
+  idUsuario: number
   @IsNotEmpty()
   cliente: ClienteDto
   @IsNotEmpty()
-  lineaPedido: LineaPedidoDto[]
+  lineasPedido: LineasPedidoDto[]
 }
