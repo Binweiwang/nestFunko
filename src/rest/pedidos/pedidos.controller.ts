@@ -51,9 +51,9 @@ export class PedidosController {
   }
 
   @Get('usuario/:idUsuario')
-  async findByIdUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number) {
+  async findByidUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number) {
     this.logger.log(`Buscando pedidos por usuario ${idUsuario}`)
-    return await this.pedidosService.findByIdUsuario(idUsuario)
+    return await this.pedidosService.findByidUsuario(idUsuario)
   }
 
   @Get(':id')
