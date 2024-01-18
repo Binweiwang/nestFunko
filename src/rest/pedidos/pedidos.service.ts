@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Funko } from '../funko/entities/funko.entity'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -7,6 +12,7 @@ import { PedidosMapper } from './mapper/pedidos.mapper'
 import { PaginateModel } from 'mongoose'
 import { Pedido, PedidoDocument } from './schemas/pedido.schema'
 import { CreatePedidoDto } from './dto/create-pedido.dto'
+import { Usuario } from '../users/entities/user.entity'
 
 export const PedidosOrderByValues: string[] = ['_id', 'idUsuario'] // Lo usamos en los pipes
 export const PedidosOrderValues: string[] = ['asc', 'desc'] // Lo usam
@@ -19,6 +25,8 @@ export class PedidosService {
     private pedidosRepository: PaginateModel<PedidoDocument>,
     @InjectRepository(Funko)
     private readonly funkosRepository: Repository<Funko>,
+    @InjectRepository(Usuario)
+    private readonly usuariosRepository: Repository<Usuario>,
     private readonly pedidosMapper: PedidosMapper,
   ) {}
 
@@ -44,7 +52,7 @@ export class PedidosService {
     return pedidoToFind
   }
 
-  async findByIdUsuario(idUsuario: number) {
+  async findByidUsuario(idUsuario: number) {
     this.logger.log(`Buscando pedido con idUsuario ${idUsuario}`)
     return await this.pedidosRepository.find({ idUsuario }).exec()
   }
@@ -95,10 +103,12 @@ export class PedidosService {
         id: lineaPedido.idFunko,
       })
       if (!funko) {
-        throw new Error(`El funko con id ${lineaPedido.idFunko} no existe`)
+        throw new BadRequestException(
+          `El funko con id ${lineaPedido.idFunko} no existe`,
+        )
       }
       if (lineaPedido.cantidad > funko.cantidad) {
-        throw new Error(
+        throw new BadRequestException(
           `No hay suficientes unidades del funko ${funko.nombre} en stock`,
         )
       }
@@ -127,6 +137,17 @@ export class PedidosService {
       0,
     )
     return pedido
+  }
+
+  async userExists(idUsuario: number): Promise<boolean> {
+    this.logger.log(`Comprobando si existe el usuario ${idUsuario}`)
+    const usuario = await this.usuariosRepository.findOneBy({ id: idUsuario })
+    return !!usuario
+  }
+
+  async getPedidosByUser(idUsuario: number): Promise<Pedido[]> {
+    this.logger.log(`Buscando pedidos por usuario ${idUsuario}`)
+    return await this.pedidosRepository.find({ idUsuario }).exec()
   }
 
   private async returnStockPedidos(pedido: Pedido): Promise<Pedido> {
