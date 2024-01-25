@@ -4,11 +4,12 @@ import {
   CreatePedidoDto,
   LineasPedidoDto,
 } from './create-pedido.dto'
-import { IsNotEmpty, IsNumber } from 'class-validator'
+import { IsNotEmpty, IsNumber, MaxLength } from 'class-validator'
 
 export class UpdatePedidoDto extends PartialType(CreatePedidoDto) {
   @IsNumber()
   @IsNotEmpty()
+  @MaxLength(10, { message: 'El idUsuario debe tener 10 dígitos' })
   idUsuario: number
 
   @IsNotEmpty()

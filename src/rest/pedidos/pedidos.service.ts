@@ -13,6 +13,7 @@ import { PaginateModel } from 'mongoose'
 import { Pedido, PedidoDocument } from './schemas/pedido.schema'
 import { CreatePedidoDto } from './dto/create-pedido.dto'
 import { Usuario } from '../users/entities/user.entity'
+import { UpdatePedidoDto } from './dto/update-pedido.dto'
 
 export const PedidosOrderByValues: string[] = ['_id', 'idUsuario'] // Lo usamos en los pipes
 export const PedidosOrderValues: string[] = ['asc', 'desc'] // Lo usam
@@ -67,7 +68,7 @@ export class PedidosService {
     return await this.pedidosRepository.create(pedidoToSave)
   }
 
-  async update(id: string, updatePedidoDto: any) {
+  async update(id: string, updatePedidoDto: UpdatePedidoDto) {
     this.logger.log(`Actualizando pedido ${id}`)
     const pedidoToBeUpdated = await this.pedidosRepository.findById(id).exec()
     if (!pedidoToBeUpdated) {
@@ -96,7 +97,9 @@ export class PedidosService {
   private async checkPedido(pedido: Pedido): Promise<void> {
     this.logger.log(`Comprobando pedido ${JSON.stringify(pedido)}`)
     if (!pedido.lineasPedido || pedido.lineasPedido.length === 0) {
-      throw new Error('El pedido debe tener al menos una línea de pedido')
+      throw new BadRequestException(
+        'El pedido debe tener al menos una línea de pedido',
+      )
     }
     for (const lineaPedido of pedido.lineasPedido) {
       const funko = await this.funkosRepository.findOneBy({
@@ -107,9 +110,19 @@ export class PedidosService {
           `El funko con id ${lineaPedido.idFunko} no existe`,
         )
       }
-      if (lineaPedido.cantidad > funko.cantidad) {
+      if (lineaPedido.cantidad > funko.cantidad && lineaPedido.cantidad > 0) {
         throw new BadRequestException(
-          `No hay suficientes unidades del funko ${funko.nombre} en stock`,
+          `No hay suficientes unidades del funko ${funko.id} en stock`,
+        )
+      }
+      if (lineaPedido.cantidad <= 0) {
+        throw new BadRequestException(
+          `La cantidad del funko ${funko.id} no puede ser negativa`,
+        )
+      }
+      if (funko.precio !== lineaPedido.precioFunko) {
+        throw new BadRequestException(
+          `El precio del funko ${funko.nombre} no coincide con el precio actual`,
         )
       }
     }
