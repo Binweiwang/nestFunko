@@ -9,8 +9,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly authService: AuthService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // el token como barer token
-      ignoreExpiration: false, // ignora la expiracion
-      // La clave secreta
+      ignoreExpiration: false,
       secretOrKey: Buffer.from(
         process.env.TOKEN_SECRET || 'ME_GUSTAN_LOS_FUNKOS',
         'utf-8',
@@ -18,7 +17,6 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
     })
   }
 
-  // Si se valida obtenemos el role
   async validate(payload: Usuario) {
     const id = payload.id
     return await this.authService.validateUser(id)
